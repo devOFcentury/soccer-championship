@@ -23,10 +23,26 @@ class ChampionnatController extends Controller
 
     public function classement(Championnat $championnat) 
     {
-       
+
         $stats = Stat::orderBy('pts', 'desc')
         ->where('championnat_id', $championnat->id)
         ->get();
+
+        // gerer la différence de but
+        for($i = 0; $i < $stats->count(); $i++) {
+            for($j = 0; $j < $stats->count(); $j++) {
+
+                // si le point actuel est égal au point de l'index suivant
+                if ( isset($stats[$j + 1]) && ($stats[$j]['pts'] == $stats[$j + 1]['pts']) ) {
+                    // si la différence de but actuelle est inférieur à la différence de but suivant
+                    if ($stats[$j]['db'] < $stats[$j + 1]['db']) {
+                        $saveValue = $stats[$j];
+                        $stats[$j] = $stats[$j + 1];
+                        $stats[$j + 1] = $saveValue;
+                    }
+                }
+            }    
+        }
        
         return view('championnat.classement', [
             'championnat' => $championnat,
