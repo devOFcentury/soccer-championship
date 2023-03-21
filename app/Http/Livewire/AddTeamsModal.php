@@ -40,8 +40,9 @@ class AddTeamsModal extends Component
     {
         $this->validate();
 
-        if (!is_null($this->championnat->nombre_journees) || $this->championnat->nombre_journees > 6 ) {
-            return $this->addError('full', 'vous ne pouvez plus ajouter d\'equipe. vous avez déja valider le nombre d\'equipe requis');
+        if (!is_null($this->championnat->nombre_journees) AND $this->championnat->nombre_journees > 6 ) {
+
+            return $this->addError('full', 'vous ne pouvez plus ajouter d\'equipe. vous avez déja valider le nombre d\'equipe requis!!!');
         }
 
 

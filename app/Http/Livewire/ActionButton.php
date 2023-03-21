@@ -12,11 +12,79 @@ use function PHPUnit\Framework\isNull;
 class ActionButton extends Component
 {
     public $championnat;
+    public $showAddTeam = true;
+    public $showValidateChampionnat = true;
+    public $showOpenDay = false;
+    public $showAddMatch = false;
+    public $showCloseDay = false;
+    public $test = true;
+
+    protected $listeners = ['refreshUpdates' => '$refresh'];
+
+
+    public function booted()
+    {
+        $daysNumber =  $this->championnat->nombre_journees; 
+        $getJourneeInvalid = $this->championnat->journees()->where('validated', 0)->orderBy('id', 'desc')->first();
+
+        // si le championnat a été validé
+        if ($daysNumber > 0) {
+            $this->showAddTeam = false;
+            $this->showValidateChampionnat = false;
+            $this->showOpenDay = true;
+            $this->showAddMatch = true;
+            $this->showCloseDay = true;
+        }
+
+        // si une journée a été ouvert on cache le bouton ouvrir
+        if ($getJourneeInvalid) {
+            $this->showOpenDay = false;
+            $this->showAddMatch = true;
+            $this->showCloseDay = true;
+        }
+
+        // si il n'ya pas de journée ouvert on cache le bouton d'ajout de match et de fermeture d'une journée
+        if (!$getJourneeInvalid) {
+            $this->showAddMatch = false;
+            $this->showCloseDay = false;
+        }
+    }
+
+
+    public function updateProperties()
+    {
+        $getJourneeInvalid = $this->championnat->journees()->where('validated', 0)->orderBy('id', 'desc')->first();
+        $daysNumber =  $this->championnat->nombre_journees; 
+
+        // si une journée a été ouvert on cache le bouton ouvrir
+        if ($getJourneeInvalid) {
+            $this->showOpenDay = false;
+        }
+
+        // si une journée est fermé on affiche le bouton ouvrir
+        if (is_null($getJourneeInvalid)) {
+            $this->showOpenDay = true;
+        }
+
+         // si le championnat a été validé
+         if ($daysNumber > 0) {
+            $this->showAddTeam = false;
+            $this->showValidateChampionnat = false;
+            $this->showOpenDay = true;
+            $this->showAddMatch = true;
+            $this->showCloseDay = true;
+        }
+
+        return $this->emit('refreshUpdates');
+
+    }
 
     protected array $equipesListID = [];
 
     public function validateTeams() 
     {
+        
+        
         $teamsNumber = $this->championnat->equipes->count();
         if ($teamsNumber >= 8 && $teamsNumber <= 20 && $teamsNumber % 2 == 0) {
             $numberOfTeams = $teamsNumber;
@@ -24,9 +92,17 @@ class ActionButton extends Component
             $numberOfDays = $numberOfMatch / (2 * $numberOfTeams);
 
             $this->championnat->nombre_journees = ceil($numberOfDays);
-
+            
             if ($this->championnat->isDirty('nombre_journees')) {
                 $this->championnat->save();
+
+                $this->showAddTeam = false;
+                $this->showValidateChampionnat = false;
+                $this->showOpenDay = true;
+                $this->showAddMatch = true;
+                $this->showCloseDay = true;
+                $this->updateProperties();
+                
                 return $this->emit('showAlertSuccess', 'championnat validé avec success');
             }
         }
@@ -51,9 +127,6 @@ class ActionButton extends Component
         // recuperer le dernier enregistrement parmi les journées dont validated est égal à 0
         $getJourneeInvalid = $this->championnat->journees()->where('validated', 0)->orderBy('id', 'desc')->first();
 
-
-        
-
         if ($getJourneeInvalid) {
             return $this->emit('showAlertError', 'vous devez valider la dernière journée avant d\'en ouvrir une');
         }
@@ -65,7 +138,12 @@ class ActionButton extends Component
           'championnat_id' => $this->championnat->id,
         ]);
 
-
+        // on cache le bouton ouvrir après avoir ouvert une journée
+        $this->showOpenDay = false;
+        $this->showAddMatch = true;
+        $this->showCloseDay = true;
+        $this->updateProperties();
+        
         return $this->emit('showAlertSuccess', 'journée ' . $journee->journee . ' ajoutée ouvert avec success. Vous pouvez ajouter des match maintenant');
         
     }
@@ -125,9 +203,13 @@ class ActionButton extends Component
 
         if ($getJourneeInvalid->isDirty()) {
             $getJourneeInvalid->save();
+            // on affiche le bouton ouvrir après avoir fermé une journée
+            $this->showOpenDay = true;
+            $this->showCloseDay = false;
+            $this->showAddMatch = false;
+            $this->updateProperties();
             return $this->emit('showAlertSuccess', 'Journée ' . $getJourneeInvalid->journee . ' fermée avec succèss');
         }
-
        
     }
 

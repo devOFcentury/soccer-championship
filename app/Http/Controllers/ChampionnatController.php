@@ -16,8 +16,8 @@ class ChampionnatController extends Controller
     }
     public function rencontre(Championnat $championnat) 
     {
-        // DB::table('equipes')->delete();
-        // DB::statement("ALTER TABLE equipes AUTO_INCREMENT=1");
+        // DB::table('journees')->delete();
+        // DB::statement("ALTER TABLE journees AUTO_INCREMENT=1");
         return view('championnat.match', ['championnat' => $championnat]);
     }
 
